@@ -15,19 +15,16 @@ outputs = { self, nixpkgs, flake-utils }:
         default = podsync;
         podsync = pkgs.buildGoModule rec {
           pname = "podsync";
-          version = "93761fd0c46c946f92e383d94be3e6a4bd60fe4a";
+          version = "v2.7.0";
 
           src = pkgs.fetchFromGitHub {
             owner = "mxpv";
             repo = "podsync";
             rev = "${version}";
-            hash = "sha256-dh676P1dc5RvCzD9gouvcMedFkesRFcN/AbVHTn1o24=";
+            hash = "sha256-JfMHIvx6BwHsVOPFXXcfcXNEVd9c6+kmtabHzmDOz5E=";
           };
 
-          patches = [ ./go.mod.patch ];
-
-          vendorHash = "sha256-ZxmBhLjsJ8ERbaiy9Hfx6mRx9yEnvspssyfEolEvReU=";
-          #vendorHash = pkgs.lib.fakeHash;
+          vendorHash = "sha256-YgyNJoIC86dqIphZsgSM+Z5oNMLi3Lzol/9AVDQ++7I=";
           
           subPackages = [ "cmd/podsync" ];
 
@@ -37,7 +34,9 @@ outputs = { self, nixpkgs, flake-utils }:
             license = licenses.mit;
           };
         };
-      };}) // {
+      };})
+      // 
+      {
       nixosModules.podsync = { lib, pkgs, config, ... }: 
         with lib;                      
         let
