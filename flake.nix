@@ -29,7 +29,7 @@ outputs = { self, nixpkgs, flake-utils }:
           subPackages = [ "cmd/podsync" ];
 
           meta = with pkgs.lib; {
-            description = "A Program to turn Youtube channels or playlist into rss feeds";
+            description = "Turn YouTube or Vimeo channels, users, or playlists into podcast feeds";
             platforms = platforms.linux;
             license = licenses.mit;
           };
@@ -45,12 +45,30 @@ outputs = { self, nixpkgs, flake-utils }:
           cfg = config.services.podsync;
           tomlFormat = pkgs.formats.toml { };
           configFile = tomlFormat.generate "podsync.toml" cfg.config;
+          command = "${cfg.package}/bin/podsync --debug -c <(cat ${configFile} ${cfg.tokenFile})";
         in {
           options.services.podsync = {
+
             enable = mkEnableOption "enable podsync";
+
+            package = mkOption {
+              type = types.package;
+              default = package;
+              defaultText = literalExpression "pkgs.podsync";
+              description = "The podsync package to use";
+            };
+
             config = mkOption {
               type = tomlFormat.type;
-              default = {};
+              description =
+                "Podsync configuration. See https://github.com/mxpv/podsync#configuration for more information.";
+              default = { };
+            };
+
+            tokenFile = mkOption {
+              type = types.str;
+              default = "";
+              description = "Path (as string) to a file containing the [tokens] section of the configuration";
             };
           };
 
@@ -65,20 +83,17 @@ outputs = { self, nixpkgs, flake-utils }:
             };
 
             systemd.services.podsync = {
-              path = with pkgs; [ 
-                yt-dlp
-                (pkgs.writeShellScriptBin "youtube-dl" "exec -a $0 ${yt-dlp}/bin/yt-dlp $@")
-                go
+              path = with pkgs; [
+                (writeShellScriptBin "youtube-dl" "exec -a $0 ${yt-dlp}/bin/yt-dlp $@") # workaround, youtube-dl fails if used
                 ffmpeg
-                package
               ];
               serviceConfig = {
-                ExecStart = "${package}/bin/podsync --debug --config ${configFile}";
-                User = "podsync";
+                  ExecStart = "${pkgs.bash}/bin/bash -c '${command}'";
+                  User = "podsync";
               };
               wantedBy = [ "multi-user.target" ];
-              };
             };
+          };
         };
       };
 }
